@@ -3,304 +3,755 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FitLock - Unlock Screen Time with Exercise</title>
+    <title>Fit Block - Unlock Screen Time with Exercise</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;800&family=Outfit:wght@500;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Animation Libraries (GSAP + Lenis) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.29/bundled/lenis.min.js"></script>
+
     <style>
+        :root {
+            --primary-blue: #2979FF;
+            --primary-purple: #651FFF;
+            --accent-orange: #FF6D00;
+            --bg-dark: #050505;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-main: #ffffff;
+            --text-muted: rgba(255, 255, 255, 0.6);
+            --cursor-size: 20px;
+            --cursor-outline-size: 40px;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            cursor: none; /* Custom cursor */
         }
+
+        /* Lenis Required Styles */
+        html.lenis { height: auto; }
+        .lenis.lenis-smooth { scroll-behavior: auto !important; }
+        .lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+        .lenis.lenis-stopped { overflow: hidden; }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #1A237E 0%, #311B92 50%, #000000 100%);
-            color: white;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            overflow-x: hidden;
             min-height: 100vh;
-            display: flex;
-            flex-direction: column;
         }
 
+        /* --- CUSTOM CURSOR --- */
+        .cursor-dot, .cursor-outline {
+            position: fixed;
+            top: 0; left: 0;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            z-index: 9999;
+            pointer-events: none;
+        }
+        .cursor-dot {
+            width: var(--cursor-size);
+            height: var(--cursor-size);
+            background-color: white;
+        }
+        .cursor-outline {
+            width: var(--cursor-outline-size);
+            height: var(--cursor-outline-size);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        /* --- BACKGROUND --- */
+        #canvas-container {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -1;
+            background: radial-gradient(circle at center, #1A237E 0%, #000000 100%);
+        }
+
+        /* --- LAYOUT UTILS --- */
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 0 24px;
+            position: relative;
+            z-index: 2;
         }
 
+        /* GSAP Initial States */
+        .anim-hero, .anim-card, .anim-left, .anim-right, .anim-up {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        /* --- HEADER --- */
         header {
-            padding: 40px 0;
-            text-align: center;
+            padding: 25px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            width: 100%;
+            max-width: 1200px;
+            left: 50%;
+            transform: translateX(-50%);
+            top: 0;
+            z-index: 100;
+            mix-blend-mode: difference;
         }
-
+        
         .logo {
-            font-size: 48px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 26px;
             font-weight: 800;
-            background: linear-gradient(90deg, #42A5F5, #1976D2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 10px;
-        }
-
-        .tagline {
-            font-size: 20px;
-            color: rgba(255, 255, 255, 0.7);
-            margin-bottom: 40px;
-        }
-
-        .hero {
-            text-align: center;
-            padding: 60px 20px;
-        }
-
-        h1 {
-            font-size: 56px;
-            font-weight: 800;
-            margin-bottom: 20px;
-            line-height: 1.2;
-        }
-
-        .highlight {
-            background: linear-gradient(90deg, #FF6F00, #FF8F00);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .subtitle {
-            font-size: 24px;
-            color: rgba(255, 255, 255, 0.8);
-            margin-bottom: 40px;
-        }
-
-        .cta-button {
-            display: inline-block;
-            padding: 18px 40px;
-            background: linear-gradient(90deg, #42A5F5, #1976D2);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            letter-spacing: -0.5px;
             color: white;
             text-decoration: none;
-            border-radius: 12px;
-            font-size: 18px;
-            font-weight: 600;
-            transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 10px 30px rgba(66, 165, 245, 0.3);
         }
 
-        .cta-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 40px rgba(66, 165, 245, 0.4);
-        }
-
-        .features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        .nav-links {
+            display: flex;
             gap: 30px;
-            padding: 60px 0;
+            align-items: center;
         }
 
-        .feature-card {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 30px;
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            font-size: 22px;
             transition: transform 0.3s;
         }
 
-        .feature-card:hover {
-            transform: translateY(-5px);
-        }
+        .nav-link:hover { transform: scale(1.2); color: var(--accent-orange); }
 
-        .feature-icon {
-            font-size: 48px;
-            margin-bottom: 20px;
+        /* --- HERO --- */
+        .hero {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding-top: 60px;
         }
-
-        .feature-title {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 10px;
+        .hero h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: clamp(40px, 7vw, 90px);
+            line-height: 1.1;
+            margin-bottom: 24px;
         }
-
-        .feature-desc {
-            color: rgba(255, 255, 255, 0.7);
+        .gradient-text {
+            background: linear-gradient(135deg, #448AFF, #B388FF, #FF9100);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-size: 200% 200%;
+            animation: gradientMove 5s ease infinite;
+        }
+        @keyframes gradientMove {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .hero .subtitle {
+            font-size: clamp(16px, 3vw, 20px);
+            color: var(--text-muted);
+            max-width: 600px;
+            margin-bottom: 40px;
             line-height: 1.6;
         }
-
-        .integration {
-            text-align: center;
-            padding: 60px 20px;
-            background: rgba(252, 76, 2, 0.1);
-            border-radius: 20px;
-            margin: 40px 0;
-        }
-
-        .strava-badge {
-            display: inline-flex;
+        .btn {
+            padding: 16px 36px;
+            border-radius: 50px;
+            font-weight: 600;
+            text-decoration: none;
+            display: flex;
             align-items: center;
             gap: 10px;
-            padding: 12px 24px;
-            background: #FC4C02;
-            border-radius: 8px;
-            font-weight: 600;
-            margin-top: 20px;
+            margin: 10px;
+            transition: transform 0.3s;
         }
-
-        footer {
+        .btn-primary {
+            background: linear-gradient(90deg, var(--primary-blue), var(--primary-purple));
+            color: white;
+            box-shadow: 0 10px 30px rgba(41, 121, 255, 0.3);
+        }
+        
+        /* --- SECTIONS --- */
+        .section-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: clamp(32px, 5vw, 48px);
+            margin-bottom: 60px;
             text-align: center;
-            padding: 40px 20px;
-            margin-top: auto;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .footer-links {
-            display: flex;
-justify-content: center;
-            gap: 30px;
+        .sports-section { padding: 100px 0; }
+        
+        .sports-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 80px;
+        }
+
+        .sport-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 40px 30px;
+            text-align: center;
+            position: relative;
+            backdrop-filter: blur(12px);
+            overflow: hidden;
+            will-change: transform; /* Performance hint */
+        }
+
+        .sport-icon {
+            font-size: 42px;
             margin-bottom: 20px;
-            flex-wrap: wrap;
+            display: inline-block;
+            background: linear-gradient(135deg, #fff, #aaa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        .footer-link {
-            color: rgba(255, 255, 255, 0.7);
+        .sport-card.active-mode .sport-icon {
+            background: linear-gradient(135deg, var(--accent-orange), #FF9100);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .badge {
+            position: absolute;
+            top: 15px; right: 15px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .badge.live { border: 1px solid #00ff00; color: #00ff00; background: rgba(0,255,0,0.05); }
+        .badge.soon { border: 1px solid #555; color: #aaa; background: rgba(255,255,255,0.05); }
+
+        .sport-card h3 { margin-bottom: 10px; font-size: 20px; font-weight: 700; }
+        .sport-card p { font-size: 14px; color: var(--text-muted); line-height: 1.5; }
+
+        /* --- FEATURES --- */
+        .feature-row {
+            display: flex;
+            align-items: center;
+            gap: 60px;
+            margin-bottom: 150px;
+        }
+        .feature-row:nth-child(even) { flex-direction: row-reverse; }
+        .feature-content { flex: 1; }
+        .feature-visual {
+            flex: 1;
+            height: 400px;
+            background: var(--glass-bg);
+            border-radius: 30px;
+            border: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        /* --- COMMUNITY SECTION --- */
+        .community-banner {
+            background: linear-gradient(135deg, rgba(255, 109, 0, 0.1), rgba(101, 31, 255, 0.1));
+            border: 1px solid var(--glass-border);
+            border-radius: 30px;
+            padding: 60px;
+            text-align: center;
+            margin-bottom: 100px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .insta-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            background: white;
+            color: black;
+            padding: 14px 28px;
+            border-radius: 50px;
+            font-weight: 700;
             text-decoration: none;
+            margin-top: 30px;
+            transition: transform 0.3s;
+        }
+        .insta-btn i { font-size: 20px; background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+        /* --- DOWNLOAD --- */
+        .download-section {
+            text-align: center;
+            padding: 80px 0;
+        }
+        .store-btn {
+            display: inline-flex;
+            align-items: center;
+            background: #000;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 12px 24px;
+            margin: 10px;
+            color: white;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+        .store-btn:not(.disabled):hover { border-color: white; transform: translateY(-3px); }
+        .store-btn.disabled { opacity: 0.5; cursor: not-allowed; }
+        .store-text { text-align: left; margin-left: 12px; }
+        .store-text span { display: block; font-size: 10px; text-transform: uppercase; }
+        .store-text strong { font-size: 18px; }
+
+        /* --- FOOTER --- */
+        footer {
+            padding: 80px 0 40px;
+            border-top: 1px solid var(--glass-border);
+            margin-top: 50px;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 60px;
+        }
+
+        .footer-col h4 { color: white; margin-bottom: 20px; font-weight: 700; }
+        .footer-col p { color: var(--text-muted); font-size: 14px; line-height: 1.6; margin-bottom: 20px; }
+        
+        .footer-link {
+            display: block;
+            color: var(--text-muted);
+            text-decoration: none;
+            margin-bottom: 12px;
+            font-size: 14px;
             transition: color 0.2s;
         }
+        .footer-link:hover { color: white; }
 
-        .footer-link:hover {
-            color: white;
+        .bottom-bar {
+            text-align: center;
+            padding-top: 40px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            color: var(--text-muted);
+            font-size: 13px;
         }
 
-        .privacy-section {
-            max-width: 800px;
-            margin: 60px auto;
-            padding: 40px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 20px;
-            line-height: 1.8;
+        @media (max-width: 900px) {
+            .footer-grid { grid-template-columns: 1fr 1fr; }
         }
-
-        .privacy-section h2 {
-            margin-bottom: 20px;
-            color: #42A5F5;
-        }
-
-        .privacy-section p {
-            margin-bottom: 15px;
-            color: rgba(255, 255, 255, 0.8);
-        }
-
         @media (max-width: 768px) {
-            h1 {
-                font-size: 36px;
-            }
-            
-            .subtitle {
-                font-size: 18px;
-            }
-
-            .features {
-                grid-template-columns: 1fr;
-            }
+            .feature-row { flex-direction: column !important; gap: 30px; }
+            .hero h1 { font-size: 48px; }
+            .footer-grid { grid-template-columns: 1fr; text-align: center; }
         }
     </style>
 </head>
 <body>
+
+    <!-- Mouse Cursor -->
+    <div class="cursor-dot"></div>
+    <div class="cursor-outline"></div>
+    
+    <!-- Fluid Background -->
+    <canvas id="canvas-container"></canvas>
+
     <div class="container">
+        <!-- HEADER -->
         <header>
-            <div class="logo">🔒 FitLock</div>
-            <div class="tagline">Your Health, Your Freedom</div>
+            <a href="#" class="logo hover-target">
+                <i class="fa-solid fa-cube" style="color: var(--accent-orange);"></i> Fit Block
+            </a>
+            <nav class="nav-links">
+                <a href="https://www.instagram.com/fitblock.app?igsh=MThmaTRkczVjYm0zYQ==" target="_blank" class="nav-link hover-target" title="Instagram">
+                    <i class="fa-brands fa-instagram"></i>
+                </a>
+                <a href="mailto:notabot.chat@gmail.com" class="nav-link hover-target" title="Contact">
+                    <i class="fa-solid fa-envelope"></i>
+                </a>
+            </nav>
         </header>
 
+        <!-- HERO -->
         <section class="hero">
-            <h1>Earn Screen Time with <span class="highlight">Exercise</span></h1>
-            <p class="subtitle">Transform push-ups and squats into phone time. Stay fit, stay focused.</p>
-            <a href="#download" class="cta-button">Get Started Free</a>
-        </section>
-
-        <section class="features">
-            <div class="feature-card">
-                <div class="feature-icon">💪</div>
-                <h3 class="feature-title">Smart Exercise Tracking</h3>
-                <p class="feature-desc">MLKit vision for push-ups and squats. Better form = more rewards!</p>
+            <h1 class="anim-hero">Unlock Your Screen<br><span class="gradient-text">With Your Sweat</span></h1>
+            <p class="subtitle anim-hero">The ultimate digital wellbeing tool. Block distractions and earn screen time with Push-ups, Squats, and Running. Build habits. Own your time.</p>
+            <div class="anim-hero">
+                <a href="#download" class="btn btn-primary hover-target">
+                    <i class="fa-brands fa-android"></i> Get for Android
+                </a>
             </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">📱</div>
-                <h3 class="feature-title">App Blocking</h3>
-                <p class="feature-desc">Out of credits? Your selected apps get locked until you exercise.</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">🏃</div>
-                <h3 class="feature-title">Strava Integration</h3>
-                <p class="feature-desc">Sync runs & rides from Strava. 1km = 1 minute of screen time!</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">🎬</div>
-                <h3 class="feature-title">Ad Credit System</h3>
-                <p class="feature-desc">Watch ads to borrow time (with "debt" you must repay later).</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">🔥</div>
-                <h3 class="feature-title">Streaks & Stats</h3>
-                <p class="feature-desc">Track your progress with daily streaks and performance analytics.</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">🌙</div>
-                <h3 class="feature-title">Midnight Panic Mode</h3>
-                <p class="feature-desc">Reminders at 8 PM and 11 PM if you have outstanding debt.</p>
+            <div style="margin-top: 50px; opacity: 0.5;" class="anim-hero">
+                <i class="fa-solid fa-chevron-down fa-bounce"></i>
             </div>
         </section>
 
-        <section class="integration">
-            <h2>Powered By</h2>
-            <div class="strava-badge">
-                <span>🚴</span>
-                <span>Strava API</span>
-            </div>
-            <p style="margin-top: 20px; color: rgba(255, 255, 255, 0.7);">
-                Connect your Strava account to automatically earn credits from your outdoor activities
-            </p>
-        </section>
-
-        <section class="privacy-section" id="privacy">
-            <h2>Privacy Policy</h2>
-            <p><strong>Last Updated:</strong> November 24, 2025</p>
+        <!-- ACTIVE SPORTS -->
+        <section class="sports-section">
+            <h2 class="section-title anim-up">Earn Time Your Way</h2>
             
-            <h3>Data We Collect</h3>
-            <p>FitLock collects minimal data to provide its core functionality:</p>
-            <ul style="margin-left: 20px; margin-bottom: 15px;">
-                <li>Exercise statistics (push-ups, squats, screen time earned)</li>
-                <li>App usage data (only for apps you explicitly block)</li>
-                <li>Strava activity data (distance, duration) when you connect your account</li>
-            </ul>
+            <h3 class="anim-up" style="text-align:center; color: var(--accent-orange); margin-bottom:30px; font-weight:600;">Available Now</h3>
+            <div class="sports-grid">
+                <div class="sport-card active-mode anim-card hover-target">
+                    <div class="badge live">Live</div>
+                    <div class="sport-icon"><i class="fa-solid fa-person-walking-arrow-right"></i></div>
+                    <h3>Push Ups</h3>
+                    <p>MLKit Vision tracking ensures perfect form. Chest to floor!</p>
+                </div>
+                <div class="sport-card active-mode anim-card hover-target">
+                    <div class="badge live">Live</div>
+                    <div class="sport-icon"><i class="fa-solid fa-person-arrow-down-to-line"></i></div>
+                    <h3>Squats</h3>
+                    <p>Earn credits for every repetition. Depth detection included.</p>
+                </div>
+                <div class="sport-card active-mode anim-card hover-target">
+                    <div class="badge live">Live</div>
+                    <div class="sport-icon"><i class="fa-brands fa-strava" style="color: #FC4C02;"></i></div>
+                    <h3>Strava: Running</h3>
+                    <p>Sync your outdoor runs. 1km distance = 1 minute screen time.</p>
+                </div>
+            </div>
 
-            <h3>Data Storage</h3>
-            <p>All data is stored locally on your device. Strava activity data is fetched via API and immediately converted to credits - we do not store your Strava activities.</p>
-
-            <h3>Third-Party Services</h3>
-            <p>FitLock integrates with:</p>
-            <ul style="margin-left: 20px; margin-bottom: 15px;">
-                <li><strong>Google AdMob:</strong> For optional ad-based credits</li>
-                <li><strong>Strava API:</strong> To sync your outdoor activities (requires your authorization)</li>
-            </ul>
-
-            <h3>Your Rights</h3>
-            <p>You can disconnect Strava at any time from the app settings. All local data can be cleared by uninstalling the app.</p>
-
-            <h3>Contact</h3>
-            <p>For privacy concerns, email: notabot.chat@gmail.com</p>
+            <!-- COMING SOON -->
+            <h3 class="anim-up" style="text-align:center; color: var(--text-muted); margin-bottom:30px; font-weight:600;">In Development</h3>
+            <div class="sports-grid">
+                <div class="sport-card anim-card hover-target">
+                    <div class="badge soon">Soon</div>
+                    <div class="sport-icon"><i class="fa-solid fa-dumbbell"></i></div>
+                    <h3>Pull Ups</h3>
+                    <p>Upper body strength tracker.</p>
+                </div>
+                <div class="sport-card anim-card hover-target">
+                    <div class="badge soon">Soon</div>
+                    <div class="sport-icon"><i class="fa-solid fa-stopwatch"></i></div>
+                    <h3>Plank</h3>
+                    <p>Hold your core for credit flow.</p>
+                </div>
+                <div class="sport-card anim-card hover-target">
+                    <div class="badge soon">Soon</div>
+                    <div class="sport-icon"><i class="fa-solid fa-water"></i></div>
+                    <h3>Strava: Swimming</h3>
+                    <p>Pool laps to unlock apps.</p>
+                </div>
+                <div class="sport-card anim-card hover-target">
+                    <div class="badge soon">Soon</div>
+                    <div class="sport-icon"><i class="fa-solid fa-bicycle"></i></div>
+                    <h3>Strava: Cycling</h3>
+                    <p>Ride to earn freedom.</p>
+                </div>
+            </div>
         </section>
+
+        <!-- FEATURES -->
+        <section class="features-section">
+            <div class="feature-row">
+                <div class="feature-content anim-left">
+                    <h2 style="font-size:32px; margin-bottom:20px; font-weight: 700;">Total App Control</h2>
+                    <p style="color: var(--text-muted); line-height: 1.6;">Out of credits? Fit Block locks your selected distracting apps immediately. The only way to unlock them is to move your body or wait until tomorrow. No cheating, no loopholes.</p>
+                </div>
+                <div class="feature-visual anim-right hover-target">
+                    <div style="width: 150px; height: 150px; background: #FF6D00; filter: blur(60px); position: absolute; border-radius: 50%;"></div>
+                    <i class="fa-solid fa-lock" style="position:relative; font-size: 60px; color: white;"></i>
+                </div>
+            </div>
+
+            <div class="feature-row">
+                <div class="feature-content anim-right">
+                    <h2 style="font-size:32px; margin-bottom:20px; font-weight: 700;">Smart Debt System</h2>
+                    <p style="color: var(--text-muted); line-height: 1.6;">Need to use your phone urgently? Watch an ad to "borrow" time. But beware: you accumulate debt. Panic Mode activates at 8 PM and 11 PM to remind you to clear your balance.</p>
+                </div>
+                <div class="feature-visual anim-left hover-target">
+                    <div style="width: 150px; height: 150px; background: #651FFF; filter: blur(60px); position: absolute; border-radius: 50%;"></div>
+                    <i class="fa-solid fa-clock-rotate-left" style="position:relative; font-size: 60px; color: white;"></i>
+                </div>
+            </div>
+        </section>
+
+        <!-- COMMUNITY / INSTAGRAM -->
+        <section class="community-banner anim-up">
+            <h2>Join the Movement</h2>
+            <p style="margin-top: 15px; color: var(--text-muted);">Follow us for development updates, beta testing codes, and form tips.</p>
+            <a href="https://www.instagram.com/fitblock.app?igsh=MThmaTRkczVjYm0zYQ==" target="_blank" class="insta-btn hover-target">
+                <i class="fa-brands fa-instagram"></i> Follow @fitblock.app
+            </a>
+        </section>
+
+        <!-- DOWNLOAD -->
+        <section class="download-section anim-up" id="download">
+            <h2 class="section-title">Ready to Start?</h2>
+            <div style="display: flex; justify-content: center; flex-wrap: wrap;">
+                <a href="#" class="store-btn disabled hover-target">
+                    <i class="fa-brands fa-google-play"></i>
+                    <div class="store-text"><span>Get it on</span><strong>Google Play</strong></div>
+                </a>
+                <a href="#" class="store-btn disabled hover-target">
+                    <i class="fa-brands fa-apple"></i>
+                    <div class="store-text"><span>Download on the</span><strong>App Store</strong></div>
+                </a>
+            </div>
+            <p style="margin-top: 20px; color: var(--text-muted); font-size: 14px;">*Store links coming soon.</p>
+        </section>
+
+        <!-- FOOTER -->
+        <footer>
+            <div class="footer-grid anim-up">
+                <div class="footer-col">
+                    <a href="#" class="logo" style="font-size: 22px; margin-bottom: 20px;">
+                        <i class="fa-solid fa-cube" style="color: var(--accent-orange);"></i> Fit Block
+                    </a>
+                    <p>Transforming your digital habits through physical movement. The only screen time control app that improves your health.</p>
+                </div>
+                
+                <div class="footer-col">
+                    <h4>Product</h4>
+                    <a href="#features" class="footer-link hover-target">Features</a>
+                    <a href="#download" class="footer-link hover-target">Download</a>
+                    <a href="#" class="footer-link hover-target">Updates</a>
+                </div>
+
+                <div class="footer-col">
+                    <h4>Legal</h4>
+                    <a href="#" class="footer-link hover-target">Privacy Policy</a>
+                    <a href="#" class="footer-link hover-target">Terms of Service</a>
+                </div>
+
+                <div class="footer-col">
+                    <h4>Connect</h4>
+                    <a href="https://www.instagram.com/fitblock.app?igsh=MThmaTRkczVjYm0zYQ==" target="_blank" class="footer-link hover-target"><i class="fa-brands fa-instagram"></i> Instagram</a>
+                    <a href="mailto:notabot.chat@gmail.com" class="footer-link hover-target"><i class="fa-solid fa-envelope"></i> Email Us</a>
+                </div>
+            </div>
+
+            <div class="bottom-bar">
+                <p>© 2025 Fit Block. All rights reserved.</p>
+                <div style="margin-top: 10px; font-size: 12px; color: #444;">
+                    Strava data processing is done locally. Not affiliated with Strava Inc.
+                </div>
+            </div>
+        </footer>
     </div>
 
-    <footer>
-        <div class="footer-links">
-            <a href="#privacy" class="footer-link">Privacy Policy</a>
-            <a href="#download" class="footer-link">Download</a>
-            <a href="mailto:support@fitlock.app" class="footer-link">Support</a>
-        </div>
-        <p style="color: rgba(255, 255, 255, 0.5);">© 2025 FitLock. All rights reserved.</p>
-    </footer>
+    <!-- Scripts -->
+    <script>
+        // --- 1. LENIS (The Capacitor Scroll) ---
+        const lenis = new Lenis({
+            duration: 1.2,
+            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+            direction: 'vertical',
+            gestureDirection: 'vertical',
+            smooth: true,
+            mouseMultiplier: 1,
+            smoothTouch: false,
+            touchMultiplier: 2,
+        });
+
+        function raf(time) {
+            lenis.raf(time);
+            requestAnimationFrame(raf);
+        }
+        requestAnimationFrame(raf);
+
+        // --- 2. GSAP SCROLL TRIGGER (Scrubbing Animations) ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Hero Reveal (Time based)
+        gsap.to(".anim-hero", {
+            y: 0, opacity: 1, visibility: "visible",
+            duration: 1.5, stagger: 0.2, ease: "power4.out"
+        });
+
+        // Cards (Scrub based)
+        const cards = document.querySelectorAll('.anim-card');
+        cards.forEach((card) => {
+            gsap.fromTo(card, 
+                { y: 100, opacity: 0, visibility: "hidden" },
+                {
+                    y: 0, opacity: 1, visibility: "visible",
+                    ease: "none",
+                    scrollTrigger: {
+                        trigger: card,
+                        start: "top 95%", end: "top 70%",
+                        scrub: 1
+                    }
+                }
+            );
+        });
+
+        // Slide Left/Right
+        gsap.utils.toArray('.anim-left').forEach(el => {
+            gsap.fromTo(el, 
+                { x: -50, opacity: 0, visibility: "hidden" },
+                {
+                    x: 0, opacity: 1, visibility: "visible",
+                    scrollTrigger: { trigger: el, start: "top 85%", end: "top 60%", scrub: 1 }
+                }
+            );
+        });
+
+        gsap.utils.toArray('.anim-right').forEach(el => {
+            gsap.fromTo(el, 
+                { x: 50, opacity: 0, visibility: "hidden" },
+                {
+                    x: 0, opacity: 1, visibility: "visible",
+                    scrollTrigger: { trigger: el, start: "top 85%", end: "top 60%", scrub: 1 }
+                }
+            );
+        });
+
+        // Slide Up (Generic)
+        gsap.utils.toArray('.anim-up').forEach(el => {
+            gsap.fromTo(el, 
+                { y: 50, opacity: 0, visibility: "hidden" },
+                {
+                    y: 0, opacity: 1, visibility: "visible",
+                    scrollTrigger: { trigger: el, start: "top 90%", end: "top 75%", scrub: 1 }
+                }
+            );
+        });
+
+        // --- 3. MAGNETIC CURSOR ---
+        const cursorDot = document.querySelector('.cursor-dot');
+        const cursorOutline = document.querySelector('.cursor-outline');
+        
+        window.addEventListener('mousemove', (e) => {
+            const posX = e.clientX;
+            const posY = e.clientY;
+            
+            cursorDot.style.left = `${posX}px`;
+            cursorDot.style.top = `${posY}px`;
+            
+            gsap.to(cursorOutline, {
+                x: posX, y: posY,
+                duration: 0.15, ease: "power2.out",
+                xPercent: -50, yPercent: -50
+            });
+        });
+
+        document.querySelectorAll('.hover-target').forEach(target => {
+            target.addEventListener('mouseenter', () => {
+                gsap.to(cursorOutline, { width: 60, height: 60, duration: 0.3 });
+                cursorOutline.style.backgroundColor = "rgba(255, 255, 255, 0.1)";
+            });
+            target.addEventListener('mouseleave', () => {
+                gsap.to(cursorOutline, { width: 40, height: 40, duration: 0.3 });
+                cursorOutline.style.backgroundColor = "transparent";
+            });
+        });
+
+        // --- 4. REACTIVE CANVAS BACKGROUND ---
+        const canvas = document.getElementById('canvas-container');
+        const ctx = canvas.getContext('2d');
+        let width, height, particles = [];
+        let mouse = { x: -1000, y: -1000 };
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            initParticles();
+        }
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.size = Math.random() * 2 + 1;
+                this.baseX = this.x;
+                this.baseY = this.y;
+                this.color = Math.random() > 0.5 ? 'rgba(41, 121, 255, ' : 'rgba(101, 31, 255, '; 
+            }
+            update() {
+                let dx = mouse.x - this.x;
+                let dy = mouse.y - this.y;
+                let distance = Math.sqrt(dx * dx + dy * dy);
+                let maxDistance = 200;
+                let force = (maxDistance - distance) / maxDistance;
+
+                if (distance < maxDistance) {
+                    this.x -= (dx / distance) * force * 2;
+                    this.y -= (dy / distance) * force * 2;
+                } else {
+                    if (this.x !== this.baseX) this.x -= (this.x - this.baseX) / 50;
+                    if (this.y !== this.baseY) this.y -= (this.y - this.baseY) / 50;
+                }
+                
+                this.baseX += this.vx;
+                this.baseY += this.vy;
+
+                if (this.baseX < 0) this.baseX = width;
+                if (this.baseX > width) this.baseX = 0;
+                if (this.baseY < 0) this.baseY = height;
+                if (this.baseY > height) this.baseY = 0;
+
+                this.x += this.vx;
+                this.y += this.vy;
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = this.color + '0.5)';
+                ctx.fill();
+            }
+        }
+
+        function initParticles() {
+            particles = [];
+            let count = (width * height) / 15000;
+            for (let i = 0; i < count; i++) particles.push(new Particle());
+        }
+
+        function animateCanvas() {
+            ctx.clearRect(0, 0, width, height);
+            for (let i = 0; i < particles.length; i++) {
+                particles[i].update();
+                particles[i].draw();
+                for (let j = i; j < particles.length; j++) {
+                    let dx = particles[i].x - particles[j].x;
+                    let dy = particles[i].y - particles[j].y;
+                    let dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 100) {
+                        ctx.beginPath();
+                        ctx.strokeStyle = `rgba(100, 100, 255, ${0.1 - dist/1000})`;
+                        ctx.lineWidth = 0.5;
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+            requestAnimationFrame(animateCanvas);
+        }
+
+        window.addEventListener('resize', resize);
+        window.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; });
+        resize();
+        animateCanvas();
+
+    </script>
 </body>
 </html>
