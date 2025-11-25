@@ -125,6 +125,13 @@
             text-decoration: none;
         }
 
+        /* New Logo Image Style */
+        .logo-img {
+            height: 32px; /* Set a comfortable size for the header */
+            width: auto;
+            vertical-align: middle;
+        }
+
         .nav-links {
             display: flex;
             gap: 30px;
@@ -382,7 +389,9 @@
         <!-- HEADER -->
         <header>
             <a href="#" class="logo hover-target">
-                <i class="fa-solid fa-cube" style="color: var(--accent-orange);"></i> Fit Block
+                <!-- LOGO IMAGE REPLACEMENT -->
+                <img src="icon.png" alt="Fit Block Logo" class="logo-img">
+                Fit Block
             </a>
             <nav class="nav-links">
                 <a href="https://www.instagram.com/fitblock.app?igsh=MThmaTRkczVjYm0zYQ==" target="_blank" class="nav-link hover-target" title="Instagram">
@@ -519,7 +528,8 @@
             <div class="footer-grid anim-up">
                 <div class="footer-col">
                     <a href="#" class="logo" style="font-size: 22px; margin-bottom: 20px;">
-                        <i class="fa-solid fa-cube" style="color: var(--accent-orange);"></i> Fit Block
+                        <img src="icon.png" alt="Fit Block Logo" class="logo-img">
+                        Fit Block
                     </a>
                     <p>Transforming your digital habits through physical movement. The only screen time control app that improves your health.</p>
                 </div>
